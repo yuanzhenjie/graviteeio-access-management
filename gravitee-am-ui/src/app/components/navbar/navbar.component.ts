@@ -31,16 +31,13 @@ import {MatSelectChange} from "@angular/material/select";
   styleUrls: ['./navbar.component.scss']
 })
 export class NavbarComponent implements OnInit, OnDestroy {
-  private navbarSubscription: Subscription;
+  private domainSubscription: Subscription;
+  private environmentSubscription: Subscription;
   private sidenavSubscription: Subscription;
   reducedMode = false;
   domains: any[];
   currentResource: any = {};
-  navLinks: any = [
-    {'href': '/domains/new', 'label': 'Create domain', 'icon': 'add'},
-    {'href': '/settings', 'label': 'Global settings', 'icon': 'settings'},
-    {'href': '/logout', 'label': 'Sign out', 'icon': 'exit_to_app'},
-  ];
+  navLinks: any[];
   currentEnvironment;
   environments: any[] = [];
 
@@ -52,18 +49,21 @@ export class NavbarComponent implements OnInit, OnDestroy {
               private environmentService: EnvironmentService,
               public router: Router) {
 
-    this.currentEnvironment = this.environmentService.getCurrentEnvironment();
-    this.initNavLinks();
     this.initEnvironments();
   }
 
   ngOnInit() {
-    this.navbarSubscription = this.navbarService.currentDomainObs$.subscribe(data => this.currentResource = data);
+    this.environmentSubscription = this.environmentService.currentEnvironmentObs$.subscribe(environment => {
+      this.currentEnvironment = environment;
+      this.initNavLinks();
+    });
+    this.domainSubscription = this.navbarService.currentDomainObs$.subscribe(data => this.currentResource = data);
     this.sidenavSubscription = this.sidenavService.resizeSidenavObservable.subscribe(reducedMode => this.reducedMode = reducedMode);
   }
 
   ngOnDestroy(): void {
-    this.navbarSubscription.unsubscribe();
+    this.environmentSubscription.unsubscribe();
+    this.domainSubscription.unsubscribe();
     this.sidenavSubscription.unsubscribe();
   }
 
@@ -77,12 +77,6 @@ export class NavbarComponent implements OnInit, OnDestroy {
     } else {
       this.domains = [];
     }
-  }
-
-  goTo(routerLink) {
-    // needed to trick reuse route strategy, skipLocationChange to avoid /dummy to go into history
-    this.router.navigateByUrl('/dummy', {skipLocationChange: true})
-      .then(() => this.router.navigate(routerLink));
   }
 
   displayBreadcrumb(): boolean {
@@ -101,12 +95,22 @@ export class NavbarComponent implements OnInit, OnDestroy {
   }
 
   private initNavLinks() {
-    if (this.currentEnvironment === undefined || !this.canDisplay(['domain_create'])) {
-      _.remove(this.navLinks, {href: '/domains/new'});
+
+    this.navLinks = [];
+
+    if (this.canDisplay(['domain_list'])) {
+      this.navLinks.push({'href': '/environments/' + this.currentEnvironment.hrids[0] + '/domains', 'label': 'All domains', 'icon': 'developer_board'});
     }
-    if (!this.canDisplay(['organization_settings_read'])) {
-      _.remove(this.navLinks, {href: '/settings'});
+
+    if (this.canDisplay(['domain_create'])) {
+      this.navLinks.push({'href': '/environments/' + this.currentEnvironment.hrids[0] + '/domains/new', 'label': 'Create domain', 'icon': 'add'});
     }
+
+    if (this.canDisplay(['organization_settings_read'])) {
+      this.navLinks.push( {'href': '/settings', 'label': 'Global settings', 'icon': 'settings'});
+    }
+
+    this.navLinks.push({'href': '/logout', 'label': 'Sign out', 'icon': 'exit_to_app'});
   }
 
   private initEnvironments() {
