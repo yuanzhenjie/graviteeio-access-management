@@ -13,9 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import {Component, OnInit} from '@angular/core';
+import {Component, HostListener, OnInit, ViewChild} from '@angular/core';
 import {ActivatedRoute} from '@angular/router';
 import '@gravitee/ui-components/wc/gv-policy-studio';
+import {OrganizationService} from "../../../services/organization.service";
+import {DomainService} from "../../../services/domain.service";
 
 @Component({
   selector: 'app-domain-flows',
@@ -27,8 +29,15 @@ export class DomainSettingsFlowsComponent implements OnInit {
   policies: any[];
   definition: any = {};
   flowSettingsForm: string;
+  documentation: string;
 
-  constructor(private route: ActivatedRoute) {}
+  @ViewChild('studio', {static: true}) studio;
+
+  constructor(private route: ActivatedRoute,
+              private organizationService: OrganizationService,
+              private domainService: DomainService,
+  ) {
+  }
 
   ngOnInit(): void {
     this.domainId = this.route.snapshot.parent.parent.params['domainId'];
@@ -36,5 +45,27 @@ export class DomainSettingsFlowsComponent implements OnInit {
     this.flowSettingsForm = this.route.snapshot.data['flowSettingsForm'];
     this.definition.flows = this.route.snapshot.data['flows'] || [];
   }
+
+  @HostListener(':gv-policy-studio:fetch-documentation', ['$event.detail'])
+  onFetchDocumentation(detail) {
+    const policy = detail.policy;
+    this.studio.nativeElement.removeAttribute('documentation');
+    this.organizationService.policyDocumentation(policy.id).subscribe((response) => {
+      this.studio.nativeElement.setAttribute('documentation', JSON.stringify({
+        content: response,
+        image: policy.icon,
+        id: policy.id
+      }));
+    }, () => {
+    });
+  }
+
+  @HostListener(':gv-policy-studio:save', ['$event.detail'])
+  onSave({definition}) {
+    this.domainService.updateFlows(this.domainId, definition.flows).subscribe((flows) => {
+      this.definition = { flows };
+    });
+  }
+
 }
 

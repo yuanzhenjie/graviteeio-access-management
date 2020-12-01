@@ -46,11 +46,11 @@ public class Flow {
     /**
      * Flow pre steps
      */
-    private List<Step> pre = new ArrayList<>();
+    private List<Step> pre;
     /**
      * Flow post steps
      */
-    private List<Step> post = new ArrayList<>();
+    private List<Step> post;
     /**
      * Flow state
      */
