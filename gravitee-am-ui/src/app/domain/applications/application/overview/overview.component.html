@@ -100,6 +100,36 @@
   -d 'grant_type=authorization_code&code=|code|&redirect_uri={{redirectUri}}&client_id={{clientId}}'</pre>
           </div>
 
+          <h2>Proof Key for Code Exchange (PKCE)</h2>
+          <p>If the application requires the use of the PKCE,  you will need to generate : </p>
+          <ul>
+            <li>a <b>code_verifier</b> that will be sent to the Token Endpoint (oauth/token)</li>
+            <li>a <b>code_challenge</b> that will be sent to the Authorization Endpoint (oauth/authorize)</li>
+          </ul>
+          <blockquote>
+            <p>
+              These codes are cryptographically-random values that your application has to create.
+            </p>
+          </blockquote>
+
+          <h4>Java sample</h4>
+          <div class="code">
+            <pre class="multiline">
+// generate the code_verifier
+SecureRandom secureRandom = new SecureRandom();
+byte[] code = new byte[32];
+secureRandom.nextBytes(codeVerifier);
+String codeVerifier = Base64.getUrlEncoder().withoutPadding().encodeToString(code);</pre>
+          </div>
+
+          <div class="code">
+            <pre class="multiline">
+// generate the code_challenge
+byte[] bytes = codeVerifier.getBytes("US-ASCII");
+MessageDigest md = MessageDigest.getInstance("SHA-256");
+String codeChallenge = Base64.getUrlEncoder().withoutPadding().encodeToString(md.digest(bytes));</pre>
+          </div>
+
           <h2>Get user information</h2>
           <p>The user's profile information can be extracted from the ID token or by calling the following URL :</p>
           <div class="code">
